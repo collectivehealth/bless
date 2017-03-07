@@ -40,7 +40,9 @@ func main() {
 
     log.Println("Executing:")
     sess := session.Must(session.NewSession())
-    svc := lambda.New(sess)
+    svc := lambda.New(sess, &aws.Config{
+        Region: aws.String(region),
+    })
 
     params := &lambda.InvokeInput{
         FunctionName: aws.String(lambda_function_name),
