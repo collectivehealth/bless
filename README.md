@@ -1,6 +1,6 @@
 ![alt text](bless_logo.png "BLESS")
 # BLESS - Bastion's Lambda Ephemeral SSH Service
-[![Build Status](https://travis-ci.org/Netflix/bless.svg?branch=master)](https://travis-ci.org/Netflix/bless) [![Join the chat at https://gitter.im/Netflix/bless](https://badges.gitter.im/Netflix/bless.svg)](https://gitter.im/Netflix/bless?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+[![Build Status](https://travis-ci.org/Netflix/bless.svg?branch=master)](https://travis-ci.org/Netflix/bless) [![Test coverage](https://coveralls.io/repos/github/Netflix/bless/badge.svg?branch=master)](https://coveralls.io/github/Netflix/bless) [![Join the chat at https://gitter.im/Netflix/bless](https://badges.gitter.im/Netflix/bless.svg)](https://gitter.im/Netflix/bless?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge) [![NetflixOSS Lifecycle](https://img.shields.io/osslifecycle/Netflix/bless.svg)]()
 
 BLESS is an SSH Certificate Authority that runs as a AWS Lambda function and is used to sign ssh
 public keys.
@@ -60,6 +60,10 @@ all of the dependencies.  AWS Lambda only supports Python 2.7 and BLESS depends 
 [Cryptography](https://cryptography.io/en/latest/), which must be compiled.  You will need to
 compile and include your dependencies before you can publish a working AWS Lambda.
 
+You can use a docker container running amazon linux:
+- Execute ```make lambda-deps``` and this will run a container and save all the dependencies in ./aws_lambda_libs
+
+Alternatively you can:
 - Deploy an [Amazon Linux AMI](http://docs.aws.amazon.com/lambda/latest/dg/current-supported-versions.html)
 - SSH onto that instance
 - Copy BLESS' `setup.py` to the instance
@@ -108,6 +112,7 @@ def lambda_handler(event, context):
 - Manage your Private Keys .pem files and passwords outside of this repo.
 - Update your bless_deploy.cfg with your Private Key's filename and encrypted passwords.
 - Provide your desired ./lambda_configs/ca_key_name.pem prior to Publishing a new Lambda .zip
+- Set the permissions of ./lambda_configs/ca_key_name.pem to 444.
 
 ### BLESS Config File
 - Refer to the the [Example BLESS Config File](bless/config/bless_deploy_example.cfg) and its
@@ -146,7 +151,7 @@ random from kms (kms:GenerateRandom) and permissions for logging to CloudWatch L
 After you have [deployed BLESS](#deployment) you can run the sample [BLESS Client](bless_client/bless_client.py)
 from a system with access to the required [AWS Credentials](http://boto3.readthedocs.io/en/latest/guide/configuration.html).
 
-    (venv) $ ./bless_client.py region lambda_function_name bastion_user bastion_user_ip remote_username bastion_source_ip bastion_command <id_rsa.pub to sign> <output id_rsa-cert.pub>
+    (venv) $ ./bless_client.py region lambda_function_name bastion_user bastion_user_ip remote_usernames bastion_source_ip bastion_command <id_rsa.pub to sign> <output id_rsa-cert.pub>
 
 
 ## Verifying Certificates
