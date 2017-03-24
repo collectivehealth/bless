@@ -11,6 +11,10 @@ import (
     "github.com/aws/aws-sdk-go/service/lambda"
 )
 
+type Payload struct {
+    Certificate string `json:"certificate"`
+}
+
 func check(e error) {
     if e != nil {
         log.Fatal(e.Error())
@@ -29,7 +33,7 @@ func main() {
     check(user_err)
 
     payload := map[string]string{"bastion_user": current_user.Username, "bastion_user_ip": bastion_user_ip,
-                                 "remote_usernames": current_user.Username, "bastion_ips": bastion_ip,
+                                 "remote_usernames": current_user.Username, "bastion_ips": bastion_user_ip,
                                  "command": bastion_command, "okta_user": current_user.Name}
     payload_json, marshal_err := json.Marshal(payload)
     check(marshal_err)
@@ -54,7 +58,13 @@ func main() {
         log.Fatal("Error creating cert.")
     }
 
-    cert_err := ioutil.WriteFile(certificate_filename, resp.Payload[17:len(resp.Payload) - 2], 0600)
+    payloadObj := new(Payload)
+    unmarshal_err := json.Unmarshal(resp.Payload, &payloadObj)
+    check(unmarshal_err)
+
+    log.Println(payloadObj.Certificate)
+
+    cert_err := ioutil.WriteFile(certificate_filename, []byte(payloadObj.Certificate), 0600)
     check(cert_err)
 
     log.Println("Wrote Certificate to: " + certificate_filename)
