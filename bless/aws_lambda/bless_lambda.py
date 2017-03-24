@@ -29,7 +29,7 @@ from bless.config.bless_config import BlessConfig, \
     KMSAUTH_SERVICE_ID_OPTION, \
     TEST_USER_OPTION, \
     CERTIFICATE_EXTENSIONS_OPTION, \
-    OKTA_PASSWORD_OPTION, \
+    ENCRYPTED_OKTA_API_TOKEN_OPTION, \
     OKTA_BASE_URL_OPTION
 from bless.request.bless_request import BlessSchema
 from bless.ssh.certificate_authorities.ssh_certificate_authority_factory import \
@@ -80,7 +80,7 @@ def lambda_handler(event, context=None, ca_private_key_password=None, okta_api_t
     ca_private_key_file = config.get(BLESS_CA_SECTION, CA_PRIVATE_KEY_FILE_OPTION)
     password_ciphertext_b64 = config.getpassword()
     certificate_extensions = config.get(BLESS_OPTIONS_SECTION, CERTIFICATE_EXTENSIONS_OPTION)
-    okta_password = config.get(BLESS_CA_SECTION, OKTA_PASSWORD_OPTION)
+    encrypted_okta_api_token = config.get(BLESS_CA_SECTION, ENCRYPTED_OKTA_API_TOKEN_OPTION)
     okta_base_url = config.get(BLESS_CA_SECTION, OKTA_BASE_URL_OPTION)
 
     # Process cert request
@@ -115,7 +115,7 @@ def lambda_handler(event, context=None, ca_private_key_password=None, okta_api_t
         kms_client = boto3.client('kms', region_name=region)
         try:
             decrypted_okta_api_token = kms_client.decrypt(
-                CiphertextBlob=base64.b64decode(okta_password))
+                CiphertextBlob=base64.b64decode(encrypted_okta_api_token))
             okta_api_token = decrypted_okta_api_token['Plaintext']
         except ClientError as e:
             return error_response('ClientError', str(e))
