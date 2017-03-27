@@ -24,16 +24,16 @@ func check(e error) {
 func main() {
     args := os.Args[1:]
     if len(args) != 6 {
-        log.Fatal("Usage: bless_client aws_region lambda_function_name bastion_user_ip bastion_ip bastion_command <output id_rsa-cert.pub>")
+        log.Fatal("Usage: bless_client aws_region lambda_function_name bastion_ip bastion_user_ip bastion_command <output id_rsa-cert.pub>")
     }
 
-    region, lambda_function_name, bastion_user_ip, bastion_ip, bastion_command, certificate_filename := args[0], args[1], args[2], args[3], args[4], args[5]
+    region, lambda_function_name, bastion_ip, bastion_user_ip, bastion_command, certificate_filename := args[0], args[1], args[2], args[3], args[4], args[5]
 
     current_user, user_err := user.Current()
     check(user_err)
 
     payload := map[string]string{"bastion_user": current_user.Username, "bastion_user_ip": bastion_user_ip,
-                                 "remote_usernames": current_user.Username, "bastion_ips": bastion_user_ip,
+                                 "remote_usernames": current_user.Username, "bastion_ips": bastion_ip,
                                  "command": bastion_command, "okta_user": current_user.Name}
     payload_json, marshal_err := json.Marshal(payload)
     check(marshal_err)
