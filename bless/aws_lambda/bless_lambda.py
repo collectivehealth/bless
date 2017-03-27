@@ -12,6 +12,8 @@ import boto3
 from botocore.exceptions import ClientError
 from kmsauth import KMSTokenValidator, TokenValidationError
 from marshmallow.exceptions import ValidationError
+from okta import UsersClient
+from okta.models.user import UserProfile as OktaUserProfile
 
 from bless.config.bless_config import BlessConfig, \
     BLESS_OPTIONS_SECTION, \
@@ -26,7 +28,9 @@ from bless.config.bless_config import BlessConfig, \
     KMSAUTH_USEKMSAUTH_OPTION, \
     KMSAUTH_SERVICE_ID_OPTION, \
     TEST_USER_OPTION, \
-    CERTIFICATE_EXTENSIONS_OPTION
+    CERTIFICATE_EXTENSIONS_OPTION, \
+    ENCRYPTED_OKTA_API_TOKEN_OPTION, \
+    OKTA_BASE_URL_OPTION
 from bless.request.bless_request import BlessSchema
 from bless.ssh.certificate_authorities.ssh_certificate_authority_factory import \
     get_ssh_certificate_authority
@@ -34,7 +38,10 @@ from bless.ssh.certificates.ssh_certificate_builder import SSHCertificateType
 from bless.ssh.certificates.ssh_certificate_builder_factory import get_ssh_certificate_builder
 
 
-def lambda_handler(event, context=None, ca_private_key_password=None,
+VALID_SSH_RSA_PUBLIC_KEY_HEADER = "ssh-rsa AAAAB3NzaC1yc2"
+
+
+def lambda_handler(event, context=None, ca_private_key_password=None, okta_api_token=None,
                    entropy_check=True,
                    config_file=os.path.join(os.path.dirname(__file__), 'bless_deploy.cfg')):
     """
@@ -73,6 +80,8 @@ def lambda_handler(event, context=None, ca_private_key_password=None,
     ca_private_key_file = config.get(BLESS_CA_SECTION, CA_PRIVATE_KEY_FILE_OPTION)
     password_ciphertext_b64 = config.getpassword()
     certificate_extensions = config.get(BLESS_OPTIONS_SECTION, CERTIFICATE_EXTENSIONS_OPTION)
+    encrypted_okta_api_token = config.get(BLESS_CA_SECTION, ENCRYPTED_OKTA_API_TOKEN_OPTION)
+    okta_base_url = config.get(BLESS_CA_SECTION, OKTA_BASE_URL_OPTION)
 
     # Process cert request
     schema = BlessSchema(strict=True)
@@ -84,7 +93,7 @@ def lambda_handler(event, context=None, ca_private_key_password=None,
     logger.info('Bless lambda invoked by [user: {0}, bastion_ips:{1}, public_key: {2}, kmsauth_token:{3}]'.format(
         request.bastion_user,
         request.bastion_user_ip,
-        request.public_key_to_sign,
+        request.okta_user,
         request.kmsauth_token))
 
     # read the private key .pem
@@ -100,6 +109,28 @@ def lambda_handler(event, context=None, ca_private_key_password=None,
             ca_private_key_password = ca_password['Plaintext']
         except ClientError as e:
             return error_response('ClientError', str(e))
+
+    # decrypt okta api token
+    if okta_api_token is None:
+        kms_client = boto3.client('kms', region_name=region)
+        try:
+            decrypted_okta_api_token = kms_client.decrypt(
+                CiphertextBlob=base64.b64decode(encrypted_okta_api_token))
+            okta_api_token = decrypted_okta_api_token['Plaintext']
+        except ClientError as e:
+            return error_response('ClientError', str(e))
+
+    # add extra property to Okta user profile schema
+    OktaUserProfile.types['public_key'] = str
+
+    # fetch pubkey from Okta
+    okta_users_client = UsersClient(okta_base_url, okta_api_token)
+    user = okta_users_client.get_user(request.okta_user)
+    public_key_to_sign = user.profile.public_key
+    if public_key_to_sign.startswith(VALID_SSH_RSA_PUBLIC_KEY_HEADER):
+        pass
+    else:
+        raise ValidationError('Invalid SSH Public Key.')
 
     # if running as a Lambda, we can check the entropy pool and seed it with KMS if desired
     if entropy_check:
@@ -155,7 +186,7 @@ def lambda_handler(event, context=None, ca_private_key_password=None,
     # Build the cert
     ca = get_ssh_certificate_authority(ca_private_key, ca_private_key_password)
     cert_builder = get_ssh_certificate_builder(ca, SSHCertificateType.USER,
-                                               request.public_key_to_sign)
+                                               public_key_to_sign)
     for username in request.remote_usernames.split(','):
         cert_builder.add_valid_principal(username)
 

@@ -33,6 +33,8 @@ CERTIFICATE_EXTENSIONS_DEFAULT = 'permit-X11-forwarding,' \
 BLESS_CA_SECTION = 'Bless CA'
 CA_PRIVATE_KEY_FILE_OPTION = 'ca_private_key_file'
 KMS_KEY_ID_OPTION = 'kms_key_id'
+ENCRYPTED_OKTA_API_TOKEN_OPTION = 'encrypted_okta_api_token'
+OKTA_BASE_URL_OPTION = 'okta_base_url'
 
 REGION_PASSWORD_OPTION_SUFFIX = '_password'
 

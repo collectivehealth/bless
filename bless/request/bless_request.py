@@ -13,7 +13,6 @@ USERNAME_PATTERN = re.compile('[a-z_][a-z0-9_-]*[$]?\Z')
 # It appears that most printable ascii is valid, excluding whitespace, #, and commas.
 # There doesn't seem to be any practical size limits of a principal (> 4096B allowed).
 PRINCIPAL_PATTERN = re.compile(r'[\d\w!"$%&\'()*+\-./:;<=>?@\[\\\]\^`{|}~]+\Z')
-VALID_SSH_RSA_PUBLIC_KEY_HEADER = "ssh-rsa AAAAB3NzaC1yc2"
 
 
 def validate_ips(ips):
@@ -37,20 +36,12 @@ def validate_principals(principals):
             raise ValidationError('Principal contains invalid characters.')
 
 
-def validate_ssh_public_key(public_key):
-    if public_key.startswith(VALID_SSH_RSA_PUBLIC_KEY_HEADER):
-        pass
-    # todo other key types
-    else:
-        raise ValidationError('Invalid SSH Public Key.')
-
-
 class BlessSchema(Schema):
     bastion_ips = fields.Str(validate=validate_ips, required=True)
     bastion_user = fields.Str(validate=validate_user, required=True)
     bastion_user_ip = fields.Str(validate=validate_ips, required=True)
     command = fields.Str(required=True)
-    public_key_to_sign = fields.Str(validate=validate_ssh_public_key, required=True)
+    okta_user = fields.Str(required=True)
     remote_usernames = fields.Str(validate=validate_principals, required=True)
     kmsauth_token = fields.Str(required=False)
 
@@ -66,7 +57,7 @@ class BlessSchema(Schema):
 
 
 class BlessRequest:
-    def __init__(self, bastion_ips, bastion_user, bastion_user_ip, command, public_key_to_sign,
+    def __init__(self, bastion_ips, bastion_user, bastion_user_ip, command, okta_user,
                  remote_usernames, kmsauth_token=None):
         """
         A BlessRequest must have the following key value pairs to be valid.
@@ -75,8 +66,7 @@ class BlessRequest:
         :param bastion_user: The user on the bastion, who is initiating the SSH request.
         :param bastion_user_ip: The IP of the user accessing the bastion.
         :param command: Text information about the SSH request of the user.
-        :param public_key_to_sign: The id_rsa.pub that will be used in the SSH request.  This is
-        enforced in the issued certificate.
+        :param okta_user: The Okta username that will be used to fetch public key.
         :param remote_usernames: Comma-separated list of username(s) or authorized principals on the remote
         server that will be used in the SSH request.  This is enforced in the issued certificate.
         :param kmsauth_token: An optional kms auth token to authenticate the user.
@@ -85,7 +75,7 @@ class BlessRequest:
         self.bastion_user = bastion_user
         self.bastion_user_ip = bastion_user_ip
         self.command = command
-        self.public_key_to_sign = public_key_to_sign
+        self.okta_user = okta_user
         self.remote_usernames = remote_usernames
         self.kmsauth_token = kmsauth_token
 
