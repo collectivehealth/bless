@@ -15,6 +15,12 @@ type Payload struct {
     Certificate string `json:"certificate"`
 }
 
+var cert_logger *log.Logger
+
+func init_logger() {
+    cert_logger = log.New(os.Stdout, "", 0)
+}
+
 func check(e error) {
     if e != nil {
         log.Fatal(e.Error())
@@ -38,8 +44,6 @@ func main() {
     payload_json, marshal_err := json.Marshal(payload)
     check(marshal_err)
 
-    log.Println("Executing in " + region)
-
     sess := session.Must(session.NewSession())
     svc := lambda.New(sess, &aws.Config{
         Region: aws.String(region),
@@ -62,10 +66,9 @@ func main() {
     unmarshal_err := json.Unmarshal(resp.Payload, &payloadObj)
     check(unmarshal_err)
 
-    log.Println(payloadObj.Certificate)
+    init_logger()
+    cert_logger.Println(payloadObj.Certificate)
 
     cert_err := ioutil.WriteFile(certificate_filename, []byte(payloadObj.Certificate), 0600)
     check(cert_err)
-
-    log.Println("Wrote Certificate to: " + certificate_filename)
 }
