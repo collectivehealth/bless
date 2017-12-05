@@ -8,7 +8,13 @@ import ConfigParser
 BLESS_OPTIONS_SECTION = 'Bless Options'
 CERTIFICATE_VALIDITY_BEFORE_SEC_OPTION = 'certificate_validity_before_seconds'
 CERTIFICATE_VALIDITY_AFTER_SEC_OPTION = 'certificate_validity_after_seconds'
+CERTIFICATE_BREAKGLASS_BEFORE_SEC_OPTION = 'certificate_breakglass_validity_before_seconds'
+CERTIFICATE_BREAKGLASS_AFTER_SEC_OPTION = 'certificate_breakglass_validity_after_seconds'
 CERTIFICATE_VALIDITY_SEC_DEFAULT = 60 * 2
+CERTIFICATE_BREAKGLASS_SEC_DEFAULT = 60
+
+BREAKGLASS_USER_OPTION = 'breakglass_user'
+BREAKGLASS_USER_DEFAULT = None
 
 ENTROPY_MINIMUM_BITS_OPTION = 'entropy_minimum_bits'
 ENTROPY_MINIMUM_BITS_DEFAULT = 2048
@@ -33,8 +39,17 @@ CERTIFICATE_EXTENSIONS_DEFAULT = 'permit-X11-forwarding,' \
 BLESS_CA_SECTION = 'Bless CA'
 CA_PRIVATE_KEY_FILE_OPTION = 'ca_private_key_file'
 KMS_KEY_ID_OPTION = 'kms_key_id'
+
+OKTA_OPTIONS_SECTION = 'Okta Options'
+
 ENCRYPTED_OKTA_API_TOKEN_OPTION = 'encrypted_okta_api_token'
+ENCRYPTED_OKTA_API_TOKEN_DEFAULT = None
+
 OKTA_BASE_URL_OPTION = 'okta_base_url'
+OKTA_BASE_URL_DEFAULT = None
+
+OKTA_ALLOWED_GROUPS_OPTION = 'okta_allowed_groups'
+OKTA_ALLOWED_GROUPS_DEFAULT = None
 
 REGION_PASSWORD_OPTION_SUFFIX = '_password'
 
@@ -64,6 +79,8 @@ class BlessConfig(ConfigParser.RawConfigParser):
         self.aws_region = aws_region
         defaults = {CERTIFICATE_VALIDITY_BEFORE_SEC_OPTION: CERTIFICATE_VALIDITY_SEC_DEFAULT,
                     CERTIFICATE_VALIDITY_AFTER_SEC_OPTION: CERTIFICATE_VALIDITY_SEC_DEFAULT,
+                    CERTIFICATE_BREAKGLASS_BEFORE_SEC_OPTION: CERTIFICATE_BREAKGLASS_SEC_DEFAULT,
+                    CERTIFICATE_BREAKGLASS_AFTER_SEC_OPTION: CERTIFICATE_BREAKGLASS_SEC_DEFAULT,
                     ENTROPY_MINIMUM_BITS_OPTION: ENTROPY_MINIMUM_BITS_DEFAULT,
                     RANDOM_SEED_BYTES_OPTION: RANDOM_SEED_BYTES_DEFAULT,
                     LOGGING_LEVEL_OPTION: LOGGING_LEVEL_DEFAULT,
@@ -71,7 +88,10 @@ class BlessConfig(ConfigParser.RawConfigParser):
                     KMSAUTH_SERVICE_ID_OPTION: KMSAUTH_SERVICE_ID_DEFAULT,
                     KMSAUTH_KEY_ID_OPTION: KMSAUTH_KEY_ID_DEFAULT,
                     KMSAUTH_USEKMSAUTH_OPTION: KMSAUTH_USEKMSAUTH_DEFAULT,
-                    CERTIFICATE_EXTENSIONS_OPTION: CERTIFICATE_EXTENSIONS_DEFAULT
+                    CERTIFICATE_EXTENSIONS_OPTION: CERTIFICATE_EXTENSIONS_DEFAULT,
+                    ENCRYPTED_OKTA_API_TOKEN_OPTION: ENCRYPTED_OKTA_API_TOKEN_DEFAULT,
+                    OKTA_BASE_URL_OPTION: OKTA_BASE_URL_DEFAULT,
+                    OKTA_ALLOWED_GROUPS_OPTION: OKTA_ALLOWED_GROUPS_DEFAULT
                     }
         ConfigParser.RawConfigParser.__init__(self, defaults=defaults)
         self.read(config_file)
@@ -81,6 +101,9 @@ class BlessConfig(ConfigParser.RawConfigParser):
 
         if not self.has_section(KMSAUTH_SECTION):
             self.add_section(KMSAUTH_SECTION)
+
+        if not self.has_section(OKTA_OPTIONS_SECTION):
+            self.add_section(OKTA_OPTIONS_SECTION)
 
         if not self.has_option(BLESS_CA_SECTION, self.aws_region + REGION_PASSWORD_OPTION_SUFFIX):
             raise ValueError("No Region Specific Password Provided.")
