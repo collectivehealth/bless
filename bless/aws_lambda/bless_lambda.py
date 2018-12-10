@@ -24,15 +24,12 @@ from bless.config.bless_config import BlessConfig, \
     BREAKGLASS_USER_OPTION, \
     ENTROPY_MINIMUM_BITS_OPTION, \
     RANDOM_SEED_BYTES_OPTION, \
-    BLESS_CA_SECTION, \
-    CA_PRIVATE_KEY_FILE_OPTION, \
     LOGGING_LEVEL_OPTION, \
     KMSAUTH_SECTION, \
     KMSAUTH_USEKMSAUTH_OPTION, \
     KMSAUTH_SERVICE_ID_OPTION, \
     TEST_USER_OPTION, \
     CERTIFICATE_EXTENSIONS_OPTION, \
-    ENCRYPTED_OKTA_API_TOKEN_OPTION, \
     OKTA_OPTIONS_SECTION, \
     OKTA_BASE_URL_OPTION, \
     OKTA_ALLOWED_GROUPS_OPTION
@@ -90,13 +87,14 @@ def lambda_handler(event, context=None, ca_private_key_password=None, okta_api_t
 
     entropy_minimum_bits = config.getint(BLESS_OPTIONS_SECTION, ENTROPY_MINIMUM_BITS_OPTION)
     random_seed_bytes = config.getint(BLESS_OPTIONS_SECTION, RANDOM_SEED_BYTES_OPTION)
-    ca_private_key_file = config.get(BLESS_CA_SECTION, CA_PRIVATE_KEY_FILE_OPTION)
-
-    password_ciphertext_b64 = config.getpassword()
-
     certificate_extensions = config.get(BLESS_OPTIONS_SECTION, CERTIFICATE_EXTENSIONS_OPTION)
 
-    encrypted_okta_api_token = config.get(OKTA_OPTIONS_SECTION, ENCRYPTED_OKTA_API_TOKEN_OPTION)
+    ca_private_key_file = config.getcafile()
+    logger.debug("CA certificate: {}".format(ca_private_key_file))
+
+    password_ciphertext_b64 = config.getpassword()
+    encrypted_okta_api_token = config.getoktatoken()
+
     okta_base_url = config.get(OKTA_OPTIONS_SECTION, OKTA_BASE_URL_OPTION)
     okta_allowed_groups = config.get(OKTA_OPTIONS_SECTION, OKTA_ALLOWED_GROUPS_OPTION)
     if okta_allowed_groups:
@@ -126,8 +124,7 @@ def lambda_handler(event, context=None, ca_private_key_password=None, okta_api_t
     # decrypt ca private key password
     if ca_private_key_password is None:
         try:
-            ca_password = kms_client.decrypt(
-                CiphertextBlob=base64.b64decode(password_ciphertext_b64))
+            ca_password = kms_client.decrypt(CiphertextBlob=base64.b64decode(password_ciphertext_b64))
             ca_private_key_password = ca_password['Plaintext']
         except ClientError as e:
             return error_response('ClientError', str(e))

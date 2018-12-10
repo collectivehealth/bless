@@ -7,3 +7,9 @@ htmlcov/
 libs/
 publish/
 venv/
+okta/
+aws_lambda_libs/
+build/
+lambda_configs/bless_deploy.cfg
+lambda_configs/bless-ca-uswest1_5.pem
+.DS_Store

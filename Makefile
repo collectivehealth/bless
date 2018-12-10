@@ -43,6 +43,9 @@ compile:
 	virtualenv /tmp/venv
 	/tmp/venv/bin/pip install --upgrade pip setuptools
 	/tmp/venv/bin/pip install -e .
+	cd okta/
+	/tmp/venv/bin/pip install -e .
+	cd ..
 	cp -r /tmp/venv/lib/python2.7/site-packages/. ./aws_lambda_libs
 	cp -r /tmp/venv/lib64/python2.7/site-packages/. ./aws_lambda_libs
 

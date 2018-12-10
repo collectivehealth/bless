@@ -37,13 +37,9 @@ CERTIFICATE_EXTENSIONS_DEFAULT = 'permit-X11-forwarding,' \
                                  'permit-user-rc'
 
 BLESS_CA_SECTION = 'Bless CA'
-CA_PRIVATE_KEY_FILE_OPTION = 'ca_private_key_file'
 KMS_KEY_ID_OPTION = 'kms_key_id'
 
 OKTA_OPTIONS_SECTION = 'Okta Options'
-
-ENCRYPTED_OKTA_API_TOKEN_OPTION = 'encrypted_okta_api_token'
-ENCRYPTED_OKTA_API_TOKEN_DEFAULT = None
 
 OKTA_BASE_URL_OPTION = 'okta_base_url'
 OKTA_BASE_URL_DEFAULT = None
@@ -52,6 +48,8 @@ OKTA_ALLOWED_GROUPS_OPTION = 'okta_allowed_groups'
 OKTA_ALLOWED_GROUPS_DEFAULT = None
 
 REGION_PASSWORD_OPTION_SUFFIX = '_password'
+REGION_PASSWORD_OPTION_SUFFIX = '_token'
+REGION_CA_FILE_SUFFIX = '_ca_private_key_file'
 
 KMSAUTH_SECTION = 'KMS Auth'
 KMSAUTH_USEKMSAUTH_OPTION = 'use_kmsauth'
@@ -89,7 +87,6 @@ class BlessConfig(ConfigParser.RawConfigParser):
                     KMSAUTH_KEY_ID_OPTION: KMSAUTH_KEY_ID_DEFAULT,
                     KMSAUTH_USEKMSAUTH_OPTION: KMSAUTH_USEKMSAUTH_DEFAULT,
                     CERTIFICATE_EXTENSIONS_OPTION: CERTIFICATE_EXTENSIONS_DEFAULT,
-                    ENCRYPTED_OKTA_API_TOKEN_OPTION: ENCRYPTED_OKTA_API_TOKEN_DEFAULT,
                     OKTA_BASE_URL_OPTION: OKTA_BASE_URL_DEFAULT,
                     OKTA_ALLOWED_GROUPS_OPTION: OKTA_ALLOWED_GROUPS_DEFAULT
                     }
@@ -108,12 +105,29 @@ class BlessConfig(ConfigParser.RawConfigParser):
         if not self.has_option(BLESS_CA_SECTION, self.aws_region + REGION_PASSWORD_OPTION_SUFFIX):
             raise ValueError("No Region Specific Password Provided.")
 
+        if not self.has_options(BLESS_CA_SECTION, self.aws_region + REGION_CA_FILE_SUFFIX):
+            raise ValueError("No Region Specific CA File Provided")
+
     def getpassword(self):
         """
         Returns the correct encrypted password based off of the aws_region.
         :return: A Base64 encoded KMS CiphertextBlob.
         """
         return self.get(BLESS_CA_SECTION, self.aws_region + REGION_PASSWORD_OPTION_SUFFIX)
+
+    def getcafile(self):
+        """
+        Returns the correct CA file based off the aws_region.
+        :return: A string that corresponds to the CA certificate filename
+        """
+        return self.get(BLESS_CA_SECTION, self.aws_region + REGION_CA_FILE_SUFFIX)
+
+    def getoktatoken(self):
+        """
+        Returns the correct encrypted password based off of the aws_region.
+        :return: A Base64 encoded KMS CiphertextBlob.
+        """
+        return self.get(OKTA_OPTIONS_SECTION, self.aws_region + REGION_TOKEN_OPTION_SUFFIX)
 
     def getkmsauthkeyids(self):
         """
